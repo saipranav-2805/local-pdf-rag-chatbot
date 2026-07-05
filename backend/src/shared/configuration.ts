@@ -46,6 +46,6 @@ export function ensureBaseConfiguration(
   return {
     retrieverProvider: configurable.retrieverProvider || 'supabase',
     filterKwargs: configurable.filterKwargs || {},
-    k: configurable.k || 5,
+    k: configurable.k || 8,
   };
 }

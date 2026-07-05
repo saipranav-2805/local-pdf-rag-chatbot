@@ -4,6 +4,7 @@
 
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StateGraph, END, START } from '@langchain/langgraph';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import fs from 'fs/promises';
 
 import { IndexStateAnnotation } from './state.js';
@@ -37,6 +38,17 @@ async function ingestDocs(
     docs = reduceDocs([], docs);
   }
 
+  // Split the documents into small, focused chunks before embedding. PDF pages
+  // can be very large; embedding a whole page produces a "blurry" vector that
+  // retrieves poorly, and stuffing whole pages into the prompt can blow past the
+  // model's context window. ~1000-character chunks with a little overlap give
+  // precise retrieval and keep each piece small.
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  });
+  const splitDocs = await splitter.splitDocuments(docs);
+
   // Clear any previously-ingested documents so each new upload starts from a
   // clean slate. This must happen BEFORE makeRetriever, which binds a retriever
   // to the current store instance. Prevents answers from leaking in from an
@@ -44,7 +56,7 @@ async function ingestDocs(
   resetVectorStore();
 
   const retriever = await makeRetriever(config);
-  await retriever.addDocuments(docs);
+  await retriever.addDocuments(splitDocs);
 
   return { docs: 'delete' };
 }

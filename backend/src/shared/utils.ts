@@ -51,9 +51,17 @@ export async function loadChatModel(
     ) {
       throw new Error(`Unsupported provider: ${provider}`);
     }
+    // Ollama defaults to a tiny 2048-token context window regardless of what
+    // the model actually supports, which silently truncates retrieved document
+    // context and causes hallucinated ("rogue") answers on larger PDFs. Raise
+    // it so the retrieved chunks + question comfortably fit.
+    const providerOptions =
+      provider === 'ollama' ? { numCtx: 8192 } : {};
+
     return await initChatModel(model, {
       modelProvider: provider,
       temperature: temperature,
+      ...providerOptions,
     });
   }
 }

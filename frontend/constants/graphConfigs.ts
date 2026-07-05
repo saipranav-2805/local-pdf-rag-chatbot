@@ -6,7 +6,9 @@ type IndexConfigurables = IndexConfiguration;
 export const retrievalAssistantStreamConfig: StreamConfigurables = {
   queryModel: 'ollama/llama3.2',
   retrieverProvider: 'supabase',
-  k: 5,
+  // Number of document chunks to retrieve per question. Higher = better recall
+  // (less likely to miss a relevant chunk) at the cost of a longer prompt.
+  k: 8,
 };
 
 /**
