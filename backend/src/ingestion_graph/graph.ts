@@ -7,7 +7,7 @@ import { StateGraph, END, START } from '@langchain/langgraph';
 import fs from 'fs/promises';
 
 import { IndexStateAnnotation } from './state.js';
-import { makeRetriever } from '../shared/retrieval.js';
+import { makeRetriever, resetVectorStore } from '../shared/retrieval.js';
 import {
   ensureIndexConfiguration,
   IndexConfigurationAnnotation,
@@ -36,6 +36,12 @@ async function ingestDocs(
   } else {
     docs = reduceDocs([], docs);
   }
+
+  // Clear any previously-ingested documents so each new upload starts from a
+  // clean slate. This must happen BEFORE makeRetriever, which binds a retriever
+  // to the current store instance. Prevents answers from leaking in from an
+  // older PDF that was uploaded earlier.
+  resetVectorStore();
 
   const retriever = await makeRetriever(config);
   await retriever.addDocuments(docs);

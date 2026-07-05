@@ -36,6 +36,22 @@ function getVectorStore(): MemoryVectorStore {
   return sharedVectorStore;
 }
 
+/**
+ * Wipe all previously-ingested documents and start a fresh, empty store.
+ *
+ * The ingestion graph calls this before adding a new upload so that each upload
+ * starts from a clean slate. Without this, every PDF ever uploaded accumulates
+ * in the same in-memory store, and retrieval can return chunks from an OLD
+ * document instead of the one the user just uploaded.
+ */
+export function resetVectorStore(): void {
+  const embeddings = new OllamaEmbeddings({
+    model: OLLAMA_EMBEDDING_MODEL,
+    baseUrl: OLLAMA_BASE_URL,
+  });
+  sharedVectorStore = new MemoryVectorStore(embeddings);
+}
+
 export async function makeMemoryRetriever(
   configuration: typeof BaseConfigurationAnnotation.State,
 ): Promise<VectorStoreRetriever> {
