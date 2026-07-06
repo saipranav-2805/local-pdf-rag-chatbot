@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# Render blueprint for the LangGraph backend (cloud/Gemini + Supabase mode).
+#
+# What this deploys:
+#   The self-hosted LangGraph dev server, serving the ingestion + retrieval
+#   graphs over HTTP. The Next.js frontend (deployed separately on Vercel)
+#   points NEXT_PUBLIC_LANGGRAPH_API_URL at this service's URL.
+#
+# How to use:
+#   1. Push this repo to GitHub (the cloud-deploy branch).
+#   2. Render dashboard -> New -> Blueprint -> pick this repo/branch.
+#   3. Render reads this file and creates the service below.
+#   4. Fill the three secret env vars (marked sync:false) in the Render UI.
+#
+# Notes / caveats:
+#   * Free plan sleeps after ~15 min idle; first request then cold-starts
+#     (~30-60s). Fine for a demo/portfolio link.
+#   * `langgraph dev` is the in-memory dev server — no Postgres/Redis needed.
+#     Document persistence is handled by Supabase (see backend/supabase_setup.sql).
+#   * Env vars are injected into process.env; the graphs read them directly,
+#     so no .env file is required on the server.
+# ---------------------------------------------------------------------------
+services:
+  - type: web
+    name: pdf-rag-backend
+    runtime: node
+    plan: free
+    # Build from the repo root so yarn workspaces resolve, then run the
+    # backend's LangGraph server bound to Render's $PORT on all interfaces.
+    rootDir: .
+    buildCommand: yarn install --frozen-lockfile
+    startCommand: cd backend && npx @langchain/langgraph-cli dev --host 0.0.0.0 --port $PORT --no-browser
+    # No healthCheckPath: the LangGraph dev server has no GET health route, so we
+    # let Render mark the service live once it's listening on $PORT.
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # ---- Secrets: set these in the Render dashboard (do NOT commit) ----
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # ---- Model config (safe to keep here) ----
+      - key: QUERY_MODEL
+        value: google-genai/gemini-2.0-flash
+      - key: EMBEDDING_MODEL
+        value: text-embedding-004
+      - key: LANGCHAIN_TRACING_V2
+        value: "false"
