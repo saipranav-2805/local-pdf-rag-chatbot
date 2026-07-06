@@ -52,8 +52,9 @@ async function ingestDocs(
   // Clear any previously-ingested documents so each new upload starts from a
   // clean slate. This must happen BEFORE makeRetriever, which binds a retriever
   // to the current store instance. Prevents answers from leaking in from an
-  // older PDF that was uploaded earlier.
-  resetVectorStore();
+  // older PDF that was uploaded earlier. (Async because in cloud mode it deletes
+  // rows from Supabase.)
+  await resetVectorStore();
 
   const retriever = await makeRetriever(config);
   await retriever.addDocuments(splitDocs);

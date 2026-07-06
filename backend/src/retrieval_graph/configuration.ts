@@ -34,6 +34,9 @@ export function ensureAgentConfiguration(
   const baseConfig = ensureBaseConfiguration(config);
   return {
     ...baseConfig,
-    queryModel: configurable.queryModel || 'ollama/llama3.2',
+    queryModel:
+      configurable.queryModel ||
+      process.env.QUERY_MODEL ||
+      'ollama/llama3.2',
   };
 }

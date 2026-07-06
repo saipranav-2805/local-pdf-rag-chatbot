@@ -1,63 +1,136 @@
 import { VectorStoreRetriever } from '@langchain/core/vectorstores';
+import { Embeddings } from '@langchain/core/embeddings';
 import { OllamaEmbeddings } from '@langchain/ollama';
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
+import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { RunnableConfig } from '@langchain/core/runnables';
-import {
-  BaseConfigurationAnnotation,
-  ensureBaseConfiguration,
-} from './configuration.js';
+import { ensureBaseConfiguration } from './configuration.js';
 
 /**
- * Local, fully-free setup:
- * - Embeddings via Ollama (`nomic-embed-text`) running on http://localhost:11434
- * - Vector store is an in-process MemoryVectorStore.
+ * This file selects the embeddings + vector store based on environment
+ * variables, so the SAME code runs in two modes:
  *
- * The ingestion graph and the retrieval graph both run inside the same
- * LangGraph dev server process, so we share ONE MemoryVectorStore instance
- * across both via this module-level singleton. That way documents added by the
- * ingestion graph are visible to the retrieval graph within the server's
- * lifetime. (Note: the store is in-memory and resets when the backend restarts.)
+ *  LOCAL (default): Ollama embeddings (`nomic-embed-text`) + in-memory store.
+ *                   Free, offline, no accounts. Resets on restart.
+ *
+ *  CLOUD:           Google Gemini embeddings + Supabase (Postgres/pgvector).
+ *                   Enabled automatically when GOOGLE_API_KEY, SUPABASE_URL and
+ *                   SUPABASE_SERVICE_ROLE_KEY are all set. Persistent, and
+ *                   deployable to serverless hosts (Vercel) where an in-memory
+ *                   store would not survive between requests.
  */
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const OLLAMA_EMBEDDING_MODEL =
   process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
+const GEMINI_EMBEDDING_MODEL =
+  process.env.EMBEDDING_MODEL || 'text-embedding-004';
+
+/** True when all cloud credentials are present. */
+export function isCloudMode(): boolean {
+  return Boolean(
+    process.env.GOOGLE_API_KEY &&
+      process.env.SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+}
+
+/** Build the embeddings client for the current mode. */
+function makeEmbeddings(): Embeddings {
+  if (isCloudMode()) {
+    return new GoogleGenerativeAIEmbeddings({
+      model: GEMINI_EMBEDDING_MODEL,
+      // apiKey is read from process.env.GOOGLE_API_KEY automatically.
+    });
+  }
+  return new OllamaEmbeddings({
+    model: OLLAMA_EMBEDDING_MODEL,
+    baseUrl: OLLAMA_BASE_URL,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// LOCAL: in-memory vector store (module-level singleton, shared by both graphs)
+// ---------------------------------------------------------------------------
 
 let sharedVectorStore: MemoryVectorStore | null = null;
 
-function getVectorStore(): MemoryVectorStore {
+function getMemoryVectorStore(): MemoryVectorStore {
   if (!sharedVectorStore) {
-    const embeddings = new OllamaEmbeddings({
-      model: OLLAMA_EMBEDDING_MODEL,
-      baseUrl: OLLAMA_BASE_URL,
-    });
-    sharedVectorStore = new MemoryVectorStore(embeddings);
+    sharedVectorStore = new MemoryVectorStore(makeEmbeddings());
   }
   return sharedVectorStore;
 }
 
-/**
- * Wipe all previously-ingested documents and start a fresh, empty store.
- *
- * The ingestion graph calls this before adding a new upload so that each upload
- * starts from a clean slate. Without this, every PDF ever uploaded accumulates
- * in the same in-memory store, and retrieval can return chunks from an OLD
- * document instead of the one the user just uploaded.
- */
-export function resetVectorStore(): void {
-  const embeddings = new OllamaEmbeddings({
-    model: OLLAMA_EMBEDDING_MODEL,
-    baseUrl: OLLAMA_BASE_URL,
-  });
-  sharedVectorStore = new MemoryVectorStore(embeddings);
+// ---------------------------------------------------------------------------
+// CLOUD: Supabase client (cached)
+// ---------------------------------------------------------------------------
+
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      process.env.SUPABASE_URL as string,
+      process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+    );
+  }
+  return supabaseClient;
 }
 
-export async function makeMemoryRetriever(
-  configuration: typeof BaseConfigurationAnnotation.State,
+function makeSupabaseVectorStore(): SupabaseVectorStore {
+  return new SupabaseVectorStore(makeEmbeddings(), {
+    client: getSupabaseClient(),
+    tableName: 'documents',
+    queryName: 'match_documents',
+  });
+}
+
+/**
+ * Wipe all previously-ingested documents so each new upload starts fresh.
+ * Without this, uploads accumulate and retrieval can surface chunks from an
+ * older document instead of the one the user just uploaded.
+ *
+ * - Local mode: replace the in-memory store with an empty one.
+ * - Cloud mode: delete every row from the Supabase `documents` table.
+ */
+export async function resetVectorStore(): Promise<void> {
+  if (isCloudMode()) {
+    // Supabase requires a filter on delete; `id >= 0` matches all rows.
+    const { error } = await getSupabaseClient()
+      .from('documents')
+      .delete()
+      .gte('id', 0);
+    if (error) {
+      throw new Error(`Failed to clear Supabase documents: ${error.message}`);
+    }
+    return;
+  }
+  sharedVectorStore = new MemoryVectorStore(makeEmbeddings());
+}
+
+// ---------------------------------------------------------------------------
+// Retriever factory
+// ---------------------------------------------------------------------------
+
+export async function makeRetriever(
+  config: RunnableConfig,
 ): Promise<VectorStoreRetriever> {
-  const vectorStore = getVectorStore();
+  const configuration = ensureBaseConfiguration(config);
   const filterKwargs = configuration.filterKwargs;
   const hasFilter = filterKwargs && Object.keys(filterKwargs).length > 0;
+
+  if (isCloudMode()) {
+    const vectorStore = makeSupabaseVectorStore();
+    return vectorStore.asRetriever({
+      k: configuration.k,
+      filter: hasFilter ? filterKwargs : undefined,
+    });
+  }
+
+  const vectorStore = getMemoryVectorStore();
   return vectorStore.asRetriever({
     k: configuration.k,
     filter: hasFilter
@@ -67,17 +140,4 @@ export async function makeMemoryRetriever(
           )
       : undefined,
   });
-}
-
-export async function makeRetriever(
-  config: RunnableConfig,
-): Promise<VectorStoreRetriever> {
-  const configuration = ensureBaseConfiguration(config);
-  // We keep the `retrieverProvider` config for template compatibility, but in
-  // this local build everything is served from the in-memory store.
-  switch (configuration.retrieverProvider) {
-    case 'supabase':
-    default:
-      return makeMemoryRetriever(configuration);
-  }
 }
