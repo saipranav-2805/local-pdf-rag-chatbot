@@ -8,13 +8,13 @@ let clientInstance: LangGraphBase | null = null;
  * Creates or returns a singleton instance of the LangGraph client for server-side use
  * @returns LangGraph Client instance
  */
-export const createServerClient = () => {
+export const createServerClient = (): LangGraphBase => {
   if (clientInstance) {
     return clientInstance;
   }
 
   if (!process.env.NEXT_PUBLIC_LANGGRAPH_API_URL) {
-    throw new Error('NEXT_PUBLIC_LANGGRAPH_API_URL is not set');
+    throw new Error('NEXT_PUBLIC_LANGGRAPH_API_URL is not set in environment variables.');
   }
 
   // LANGCHAIN_API_KEY is only required to reach a deployed LangGraph Cloud
@@ -36,5 +36,14 @@ export const createServerClient = () => {
   return clientInstance;
 };
 
-// Export all methods from the base class instance
-export const langGraphServerClient = createServerClient();
+// Export a proxy that delegates lazily to the singleton instance to prevent build-time crashes
+export const langGraphServerClient = new Proxy({} as LangGraphBase, {
+  get(target, prop, receiver) {
+    const instance = createServerClient();
+    const value = Reflect.get(instance, prop, receiver);
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
+  },
+});
