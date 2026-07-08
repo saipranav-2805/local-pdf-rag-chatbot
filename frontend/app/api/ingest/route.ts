@@ -11,15 +11,7 @@ const ALLOWED_FILE_TYPES = ['application/pdf'];
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.LANGGRAPH_INGESTION_ASSISTANT_ID) {
-      return NextResponse.json(
-        {
-          error:
-            'LANGGRAPH_INGESTION_ASSISTANT_ID is not set in your environment variables',
-        },
-        { status: 500 },
-      );
-    }
+    const assistantId = process.env.LANGGRAPH_INGESTION_ASSISTANT_ID || 'ingestion_graph';
 
     const formData = await request.formData();
     const files: File[] = [];
@@ -82,7 +74,7 @@ export async function POST(request: NextRequest) {
     const thread = await langGraphServerClient.createThread();
     const ingestionRun = await langGraphServerClient.client.runs.wait(
       thread.thread_id,
-      'ingestion_graph',
+      assistantId,
       {
         input: {
           docs: allDocs,
