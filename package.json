@@ -2,6 +2,7 @@
     "name": "ai-pdf-chatbot-langchain",
     "description": "AI PDF chatbot template based on the book Learning LangChain (O'Reilly)",
     "private": true,
+    "packageManager": "yarn@1.22.22",
     "version": "0.0.1",
     "author": "Mayo Oshin",
     "license": "MIT",
