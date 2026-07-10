@@ -49,15 +49,35 @@ async function ingestDocs(
   });
   const splitDocs = await splitter.splitDocuments(docs);
 
+  // Log the operating mode for debugging deployed environments
+  const cloudMode = (await import('../shared/retrieval.js')).isCloudMode();
+  console.log(`[ingestDocs] mode=${cloudMode ? 'CLOUD' : 'LOCAL'}, docs=${docs.length}, splitDocs=${splitDocs.length}`);
+  if (cloudMode) {
+    console.log(`[ingestDocs] GOOGLE_API_KEY set: ${!!process.env.GOOGLE_API_KEY}, SUPABASE_URL set: ${!!process.env.SUPABASE_URL}, SUPABASE_SERVICE_ROLE_KEY set: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
+    console.log(`[ingestDocs] EMBEDDING_MODEL: ${process.env.EMBEDDING_MODEL || 'text-embedding-004 (default)'}`);
+  }
+
   // Clear any previously-ingested documents so each new upload starts from a
   // clean slate. This must happen BEFORE makeRetriever, which binds a retriever
   // to the current store instance. Prevents answers from leaking in from an
   // older PDF that was uploaded earlier. (Async because in cloud mode it deletes
   // rows from Supabase.)
-  await resetVectorStore();
+  try {
+    await resetVectorStore();
+  } catch (resetErr: any) {
+    console.error('[ingestDocs] resetVectorStore failed:', resetErr.message);
+    throw new Error(`Reset vector store failed: ${resetErr.message}`);
+  }
 
   const retriever = await makeRetriever(config);
-  await retriever.addDocuments(splitDocs);
+
+  try {
+    await retriever.addDocuments(splitDocs);
+  } catch (addErr: any) {
+    console.error('[ingestDocs] addDocuments failed:', addErr.message);
+    // Surface the real error (e.g. bad API key, wrong embedding model, Supabase issue)
+    throw new Error(`Failed to embed and store documents: ${addErr.message}`);
+  }
 
   return { docs: 'delete' };
 }
