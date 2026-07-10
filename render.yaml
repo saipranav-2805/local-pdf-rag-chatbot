@@ -46,6 +46,6 @@ services:
       - key: QUERY_MODEL
         value: google-genai/gemini-2.0-flash
       - key: EMBEDDING_MODEL
-        value: text-embedding-004
+        value: gemini-embedding-2
       - key: LANGCHAIN_TRACING_V2
         value: "false"

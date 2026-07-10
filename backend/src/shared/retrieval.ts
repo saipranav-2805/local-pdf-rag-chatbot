@@ -26,7 +26,7 @@ const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const OLLAMA_EMBEDDING_MODEL =
   process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
 const GEMINI_EMBEDDING_MODEL =
-  process.env.EMBEDDING_MODEL || 'text-embedding-004';
+  process.env.EMBEDDING_MODEL || 'gemini-embedding-2';
 
 /** True when all cloud credentials are present. */
 export function isCloudMode(): boolean {
