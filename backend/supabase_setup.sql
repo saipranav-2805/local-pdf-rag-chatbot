@@ -14,6 +14,11 @@
 --   Google Gemini `gemini-embedding-2` returns 3072 dimensions, so the
 --   column is vector(3072). If you switch embedding models, change 3072
 --   in BOTH the table column and the function signature to match.
+--
+-- INDEX NOTE:
+--   We use HNSW (not ivfflat) because ivfflat only supports up to 2000
+--   dimensions, and gemini-embedding-2 outputs 3072. HNSW supports up to
+--   4000 dimensions and is generally faster for smaller datasets.
 -- ---------------------------------------------------------------------------
 
 -- 1. Enable pgvector (safe to run repeatedly).
@@ -63,9 +68,8 @@ begin
 end;
 $$;
 
--- 5. (Optional but recommended) Approximate-nearest-neighbour index for speed.
---    Only helps once you have a meaningful number of rows; harmless to create now.
+-- 5. HNSW index for approximate nearest-neighbour search.
+--    HNSW supports up to 4000 dimensions (ivfflat maxes out at 2000).
 create index if not exists documents_embedding_idx
   on documents
-  using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
+  using hnsw (embedding vector_cosine_ops);
