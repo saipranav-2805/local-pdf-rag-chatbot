@@ -68,8 +68,8 @@ begin
 end;
 $$;
 
--- 5. HNSW index for approximate nearest-neighbour search.
---    HNSW supports up to 4000 dimensions (ivfflat maxes out at 2000).
-create index if not exists documents_embedding_idx
-  on documents
-  using hnsw (embedding vector_cosine_ops);
+-- 5. Vector index.
+--    NOTE: Supabase's pgvector limits HNSW and IVFFlat indexes to ≤2000
+--    dimensions. gemini-embedding-2 outputs 3072, so no ANN index is
+--    possible. Exact sequential scan is used instead — perfectly fast for
+--    demo-sized datasets (hundreds to low-thousands of rows).
