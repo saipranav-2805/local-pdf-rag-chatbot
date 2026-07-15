@@ -32,11 +32,18 @@ export function ensureAgentConfiguration(
     typeof AgentConfigurationAnnotation.State
   >;
   const baseConfig = ensureBaseConfiguration(config);
+  let queryModel =
+    configurable.queryModel ||
+    process.env.QUERY_MODEL ||
+    'ollama/llama3.2';
+
+  // Map gemini-2.0-flash to gemini-1.5-flash due to free-tier restrictions (limit: 0 on 2.0-flash)
+  if (queryModel === 'google-genai/gemini-2.0-flash') {
+    queryModel = 'google-genai/gemini-1.5-flash';
+  }
+
   return {
     ...baseConfig,
-    queryModel:
-      configurable.queryModel ||
-      process.env.QUERY_MODEL ||
-      'ollama/llama3.2',
+    queryModel,
   };
 }
