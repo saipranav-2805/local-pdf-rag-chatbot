@@ -28,7 +28,7 @@ services:
     # Build from the repo root so yarn workspaces resolve, then run the
     # backend's LangGraph server bound to Render's $PORT on all interfaces.
     rootDir: .
-    buildCommand: yarn install --frozen-lockfile
+    buildCommand: yarn install --frozen-lockfile && yarn workspace backend build
     startCommand: cd backend && npx @langchain/langgraph-cli dev --host 0.0.0.0 --port $PORT --no-browser
     # No healthCheckPath: the LangGraph dev server has no GET health route, so we
     # let Render mark the service live once it's listening on $PORT.

@@ -1,8 +1,8 @@
 {
     "node_version": "20",
     "graphs": {
-      "ingestion_graph": "./src/ingestion_graph/graph.ts:graph",
-      "retrieval_graph": "./src/retrieval_graph/graph.ts:graph"
+      "ingestion_graph": "./dist/src/ingestion_graph/graph.js:graph",
+      "retrieval_graph": "./dist/src/retrieval_graph/graph.js:graph"
     },
     "env": ".env",
     "dependencies":["."]
