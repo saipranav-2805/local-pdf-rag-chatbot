@@ -44,7 +44,7 @@ services:
         sync: false
       # ---- Model config (safe to keep here) ----
       - key: QUERY_MODEL
-        value: google-genai/gemini-1.5-flash
+        value: google-genai/gemini-2.5-flash
       - key: EMBEDDING_MODEL
         value: gemini-embedding-2
       - key: LANGCHAIN_TRACING_V2

@@ -37,9 +37,12 @@ export function ensureAgentConfiguration(
     process.env.QUERY_MODEL ||
     'ollama/llama3.2';
 
-  // Map gemini-2.0-flash to gemini-1.5-flash due to free-tier restrictions (limit: 0 on 2.0-flash)
-  if (queryModel === 'google-genai/gemini-2.0-flash') {
-    queryModel = 'google-genai/gemini-1.5-flash';
+  // Map gemini-2.0-flash and gemini-1.5-flash to gemini-2.5-flash due to deprecation and free-tier restrictions
+  if (
+    queryModel === 'google-genai/gemini-2.0-flash' ||
+    queryModel === 'google-genai/gemini-1.5-flash'
+  ) {
+    queryModel = 'google-genai/gemini-2.5-flash';
   }
 
   return {
