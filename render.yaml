@@ -49,3 +49,5 @@ services:
         value: gemini-embedding-2
       - key: LANGCHAIN_TRACING_V2
         value: "false"
+      - key: LANGGRAPH_SKIP_SCHEMA_EXTRACTION
+        value: "true"
