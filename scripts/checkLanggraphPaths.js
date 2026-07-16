@@ -25,10 +25,10 @@ function isObjectExported(filePath, objectName) {
 function checkLanggraphPaths() {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const langgraphPath = path.join(__dirname, "..", "langgraph.json");
+  const langgraphPath = path.join(__dirname, "..", "backend", "langgraph.json");
 
   if (!fileExists(langgraphPath)) {
-    console.error("langgraph.json not found in the root directory");
+    console.error("langgraph.json not found in backend directory");
     process.exit(1);
   }
 
@@ -45,7 +45,16 @@ function checkLanggraphPaths() {
 
     for (const [key, value] of Object.entries(graphs)) {
       const [filePath, objectName] = value.split(":");
-      const fullPath = path.join(__dirname, "..", filePath);
+      
+      // Resolve path: map compiled dist/src/*.js to source src/*.ts files for verification
+      let targetPath = filePath;
+      if (filePath.startsWith("./dist/src/")) {
+        targetPath = filePath.replace("./dist/src/", "./src/").replace(".js", ".ts");
+      } else if (filePath.startsWith("./dist/")) {
+        targetPath = filePath.replace("./dist/", "./src/").replace(".js", ".ts");
+      }
+      
+      const fullPath = path.join(__dirname, "..", "backend", targetPath);
 
       if (!fileExists(fullPath)) {
         console.error(`File not found: ${fullPath}`);
