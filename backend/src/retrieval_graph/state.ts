@@ -18,6 +18,7 @@ export const AgentStateAnnotation = Annotation.Root({
     Document[] | { [key: string]: any }[] | string[] | string | 'delete'
   >({
     default: () => [],
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     reducer: reduceDocs,
   }),

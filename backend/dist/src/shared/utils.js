@@ -1,0 +1,53 @@
+import { initChatModel } from 'langchain/chat_models/universal';
+const SUPPORTED_PROVIDERS = [
+    'openai',
+    'anthropic',
+    'azure_openai',
+    'cohere',
+    'google-vertexai',
+    'google-vertexai-web',
+    'google-genai',
+    'ollama',
+    'together',
+    'fireworks',
+    'mistralai',
+    'groq',
+    'bedrock',
+    'cerebras',
+    'deepseek',
+    'xai',
+];
+/**
+ * Load a chat model from a fully specified name.
+ * @param fullySpecifiedName - String in the format 'provider/model' or 'provider/account/provider/model'.
+ * @returns A Promise that resolves to a BaseChatModel instance.
+ */
+export async function loadChatModel(fullySpecifiedName, temperature = 0.2) {
+    const index = fullySpecifiedName.indexOf('/');
+    if (index === -1) {
+        // If there's no "/", assume it's just the model
+        if (!SUPPORTED_PROVIDERS.includes(fullySpecifiedName)) {
+            throw new Error(`Unsupported model: ${fullySpecifiedName}`);
+        }
+        return await initChatModel(fullySpecifiedName, {
+            temperature: temperature,
+        });
+    }
+    else {
+        const provider = fullySpecifiedName.slice(0, index);
+        const model = fullySpecifiedName.slice(index + 1);
+        if (!SUPPORTED_PROVIDERS.includes(provider)) {
+            throw new Error(`Unsupported provider: ${provider}`);
+        }
+        // Ollama defaults to a tiny 2048-token context window regardless of what
+        // the model actually supports, which silently truncates retrieved document
+        // context and causes hallucinated ("rogue") answers on larger PDFs. Raise
+        // it so the retrieved chunks + question comfortably fit.
+        const providerOptions = provider === 'ollama' ? { numCtx: 8192 } : {};
+        return await initChatModel(model, {
+            modelProvider: provider,
+            temperature: temperature,
+            ...providerOptions,
+        });
+    }
+}

@@ -34,6 +34,9 @@ out/
 build
 dist
 apps/docs/public/registry/
+# Un-ignore backend compiled output so Render has it at startup without needing tsc
+!backend/dist
+!backend/dist/**
 
 # turbo
 .turbo
