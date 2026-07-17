@@ -74,18 +74,23 @@ function makeSupabaseVectorStore() {
  * - Local mode: replace the in-memory store with an empty one.
  * - Cloud mode: delete every row from the Supabase `documents` table.
  */
-export async function resetVectorStore() {
+export async function resetVectorStore(sessionId) {
     if (isCloudMode()) {
-        // Supabase requires a filter on delete; `id >= 0` matches all rows.
-        const { error } = await getSupabaseClient()
-            .from('documents')
-            .delete()
-            .gte('id', 0);
+        let query = getSupabaseClient().from('documents').delete();
+        if (sessionId) {
+            query = query.filter('metadata->>session_id', 'eq', sessionId);
+        }
+        else {
+            // Supabase requires a filter on delete; `id >= 0` matches all rows.
+            query = query.gte('id', 0);
+        }
+        const { error } = await query;
         if (error) {
             throw new Error(`Failed to clear Supabase documents: ${error.message}`);
         }
         return;
     }
+    // For local memory store, we just reset it
     sharedVectorStore = new MemoryVectorStore(makeEmbeddings());
 }
 // ---------------------------------------------------------------------------

@@ -10,5 +10,5 @@ export declare function isCloudMode(): boolean;
  * - Local mode: replace the in-memory store with an empty one.
  * - Cloud mode: delete every row from the Supabase `documents` table.
  */
-export declare function resetVectorStore(): Promise<void>;
+export declare function resetVectorStore(sessionId?: string): Promise<void>;
 export declare function makeRetriever(config: RunnableConfig): Promise<VectorStoreRetriever>;

@@ -15,10 +15,13 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const files: File[] = [];
+    let sessionId = '';
 
     for (const [key, value] of formData.entries()) {
       if (key === 'files' && value instanceof File) {
         files.push(value);
+      } else if (key === 'sessionId' && typeof value === 'string') {
+        sessionId = value;
       }
     }
 
@@ -82,6 +85,10 @@ export async function POST(request: NextRequest) {
         config: {
           configurable: {
             ...indexConfig,
+            filterKwargs: {
+              ...indexConfig.filterKwargs,
+              session_id: sessionId || undefined,
+            },
           },
         },
       },

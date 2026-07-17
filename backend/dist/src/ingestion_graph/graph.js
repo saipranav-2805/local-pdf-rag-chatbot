@@ -37,9 +37,19 @@ async function ingestDocs(state, config) {
         chunkOverlap: 200,
     });
     const splitDocs = await splitter.splitDocuments(docs);
+    const sessionId = configuration.filterKwargs?.session_id ||
+        configuration.filterKwargs?.sessionId;
+    if (sessionId) {
+        for (const doc of splitDocs) {
+            doc.metadata = {
+                ...doc.metadata,
+                session_id: sessionId,
+            };
+        }
+    }
     // Log the operating mode for debugging deployed environments
     const cloudMode = (await import('../shared/retrieval.js')).isCloudMode();
-    console.log(`[ingestDocs] mode=${cloudMode ? 'CLOUD' : 'LOCAL'}, docs=${docs.length}, splitDocs=${splitDocs.length}`);
+    console.log(`[ingestDocs] mode=${cloudMode ? 'CLOUD' : 'LOCAL'}, docs=${docs.length}, splitDocs=${splitDocs.length}, sessionId=${sessionId || 'none'}`);
     if (cloudMode) {
         console.log(`[ingestDocs] GOOGLE_API_KEY set: ${!!process.env.GOOGLE_API_KEY}, SUPABASE_URL set: ${!!process.env.SUPABASE_URL}, SUPABASE_SERVICE_ROLE_KEY set: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
         console.log(`[ingestDocs] EMBEDDING_MODEL: ${process.env.EMBEDDING_MODEL || 'text-embedding-004 (default)'}`);
@@ -50,7 +60,7 @@ async function ingestDocs(state, config) {
     // older PDF that was uploaded earlier. (Async because in cloud mode it deletes
     // rows from Supabase.)
     try {
-        await resetVectorStore();
+        await resetVectorStore(sessionId);
     }
     catch (resetErr) {
         console.error('[ingestDocs] resetVectorStore failed:', resetErr.message);
