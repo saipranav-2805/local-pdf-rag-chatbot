@@ -32,18 +32,19 @@ export function ensureAgentConfiguration(
     typeof AgentConfigurationAnnotation.State
   >;
   const baseConfig = ensureBaseConfiguration(config);
+  const hasGoogleKey = !!process.env.GOOGLE_API_KEY;
   let queryModel =
     configurable.queryModel ||
     process.env.QUERY_MODEL ||
-    'ollama/llama3.2';
+    (hasGoogleKey ? 'google-genai/gemini-2.0-flash-lite' : 'ollama/llama3.2');
 
-  // Map gemini-2.0-flash and gemini-1.5-flash to gemini-2.5-flash due to deprecation and free-tier restrictions
-  if (
-    queryModel === 'google-genai/gemini-2.0-flash' ||
-    queryModel === 'google-genai/gemini-1.5-flash'
-  ) {
-    queryModel = 'google-genai/gemini-2.5-flash';
-  }
+  // Normalize deprecated / unavailable Gemini models to gemini-2.0-flash-lite.
+  // Uses regex so it catches any variant (with or without provider prefix,
+  // with or without patch suffix) rather than exact-string matching.
+  queryModel = queryModel
+    .replace(/gemini-1\.5(-flash|-pro)?(-\d+)?(-latest)?/, 'gemini-2.0-flash-lite')
+    .replace(/gemini-2\.5-flash(-\d+)?(-preview(-[\w-]+)?)?/, 'gemini-2.0-flash-lite')
+    .replace(/gemini-2\.0-flash(?!-lite)(-\d+)?(-preview(-[\w-]+)?)?/, 'gemini-2.0-flash-lite');
 
   return {
     ...baseConfig,
