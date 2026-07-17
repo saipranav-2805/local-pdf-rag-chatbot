@@ -25,6 +25,9 @@ const config = {
           '20%': { opacity: '1' },
           '100%': { opacity: '.2' },
         },
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       animation: {
         loading: 'loading 1s ease-in-out infinite',

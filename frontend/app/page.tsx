@@ -6,7 +6,6 @@ import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  Paperclip, 
   ArrowUp, 
   Loader2, 
   Bot, 
@@ -14,8 +13,6 @@ import {
   BookOpen, 
   UploadCloud, 
   PlusCircle, 
-  Trash2, 
-  MessageSquare,
   FileText
 } from 'lucide-react';
 import { ExamplePrompts } from '@/components/example-prompts';
@@ -23,7 +20,6 @@ import { ChatMessage } from '@/components/chat-message';
 import { FilePreview } from '@/components/file-preview';
 import { client } from '@/lib/langgraph-client';
 import { PDFDocument, RetrieveDocumentsNodeUpdates } from '@/types/graphTypes';
-import { Card, CardContent } from '@/components/ui/card';
 
 export default function Home() {
   const { toast } = useToast();
@@ -139,6 +135,7 @@ export default function Home() {
 
       const decoder = new TextDecoder();
 
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -304,28 +301,30 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden text-white/90">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#030305] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.15),rgba(255,255,255,0))] text-slate-200 font-sans selection:bg-indigo-500/30">
       
       {/* Sidebar Panel - Desktop Layout */}
-      <aside className="w-80 border-r border-white/10 hidden md:flex flex-col bg-white/[0.02] backdrop-blur-xl p-6 justify-between">
-        <div className="space-y-6">
+      <aside className="w-80 border-r border-white/5 hidden md:flex flex-col bg-[#0a0a0f]/60 backdrop-blur-3xl p-6 justify-between shadow-[4px_0_24px_rgba(0,0,0,0.2)] z-10 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />
+        
+        <div className="space-y-8 relative z-10">
           
           {/* Logo / Branding */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-base tracking-tight flex items-center gap-1.5 bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
-                PDF Chat AI <Sparkles className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+              <h1 className="font-bold text-lg tracking-tight flex items-center gap-1.5 bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
+                PDF Chat AI <Sparkles className="w-4 h-4 text-indigo-400 fill-indigo-400" />
               </h1>
-              <span className="text-[10px] uppercase tracking-wider text-indigo-400/70 font-semibold">Active Session</span>
+              <span className="text-[10px] uppercase tracking-widest text-indigo-400/80 font-bold">Active Workspace</span>
             </div>
           </div>
 
           {/* Doc catalog list container */}
-          <div className="space-y-3 pt-2">
-            <h2 className="text-xs uppercase tracking-widest font-bold text-white/40 flex items-center gap-2">
+          <div className="space-y-4 pt-2">
+            <h2 className="text-[11px] uppercase tracking-[0.2em] font-bold text-slate-500 flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5" /> Documents Library
             </h2>
 
@@ -342,7 +341,7 @@ export default function Home() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full bg-white/5 hover:bg-white/10 hover:border-white/20 border-white/10 text-white/80 gap-2 h-11 rounded-xl"
+                className="w-full bg-white/[0.03] hover:bg-white/[0.08] hover:border-indigo-500/30 border-white/10 text-slate-300 gap-2 h-12 rounded-xl transition-all duration-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.1)]"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -351,12 +350,12 @@ export default function Home() {
                 ) : (
                   <UploadCloud className="w-4 h-4 text-indigo-400" />
                 )}
-                {isUploading ? 'Loading Files...' : 'Add PDF Document'}
+                {isUploading ? 'Ingesting...' : 'Add PDF Document'}
               </Button>
             </div>
 
             {/* Mini List */}
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
               {files.map((file, idx) => (
                 <FilePreview
                   key={`${file.name}-${idx}`}
@@ -365,9 +364,9 @@ export default function Home() {
                 />
               ))}
               {files.length === 0 && (
-                <div className="flex flex-col items-center justify-center p-6 border border-dashed border-white/5 rounded-xl bg-white/[0.01]">
-                  <FileText className="w-8 h-8 text-white/20 mb-2" />
-                  <p className="text-[11px] text-white/30 text-center font-medium">No documents loaded yet.</p>
+                <div className="flex flex-col items-center justify-center p-8 border border-dashed border-white/5 rounded-2xl bg-white/[0.01]">
+                  <FileText className="w-8 h-8 text-slate-600 mb-3" />
+                  <p className="text-xs text-slate-500 text-center font-medium leading-relaxed">No documents loaded.<br/>Upload to begin.</p>
                 </div>
               )}
             </div>
@@ -375,32 +374,32 @@ export default function Home() {
         </div>
 
         {/* Sidebar Footer Actions */}
-        <div className="space-y-2 pt-4 border-t border-white/5">
+        <div className="space-y-3 pt-6 border-t border-white/5 relative z-10">
           <Button
             onClick={handleNewSession}
             variant="ghost"
-            className="w-full justify-start text-white/55 hover:text-white hover:bg-white/5 gap-2 h-10 rounded-xl"
+            className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10 gap-3 h-11 rounded-xl transition-colors"
           >
             <PlusCircle className="w-4 h-4 text-indigo-400" />
-            New Workspace
+            <span className="font-medium">New Workspace</span>
           </Button>
-          <div className="text-[10px] text-white/20 font-medium px-3">
-            Local PDF RAG Chatbot v1.1
+          <div className="text-[10px] text-slate-600 font-medium px-4 text-center tracking-wide">
+            v2.0 • Premium Edition
           </div>
         </div>
       </aside>
 
       {/* Main Chat Flow Container */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-black/10">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         
         {/* Mobile / Screen top-bar header */}
-        <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between md:justify-end bg-white/[0.01] backdrop-blur-md">
+        <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between md:justify-end bg-[#0a0a0f]/40 backdrop-blur-xl z-20">
           {/* Brand visibility on Mobile layouts */}
-          <div className="flex items-center gap-2 md:hidden">
-            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
+          <div className="flex items-center gap-3 md:hidden">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg ring-1 ring-white/20">
               <Bot className="w-4 h-4 text-white" />
             </div>
-            <h1 className="font-bold text-sm text-white">PDF Chat AI</h1>
+            <h1 className="font-bold text-sm text-slate-200">PDF Chat AI</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -409,7 +408,7 @@ export default function Home() {
               <Button
                 size="icon"
                 variant="outline"
-                className="bg-white/5 border-white/10 hover:bg-white/10 rounded-xl h-10 w-10"
+                className="bg-white/5 border-white/10 hover:bg-white/10 rounded-xl h-9 w-9"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -417,84 +416,88 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white/60">
-              <div className={`w-2 h-2 rounded-full ${threadId ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`} />
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/5 rounded-full text-[11px] font-medium text-slate-400 shadow-inner">
+              <div className={`w-1.5 h-1.5 rounded-full ${threadId ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-amber-500'} animate-pulse`} />
               {threadId ? 'Connected' : 'Connecting'}
             </div>
           </div>
         </header>
 
         {/* Scrollable messages wrapper */}
-        <section className="flex-1 overflow-y-auto px-4 md:px-8 py-6 max-w-4xl mx-auto w-full space-y-6">
+        <section className="flex-1 overflow-y-auto px-4 md:px-8 py-8 max-w-4xl mx-auto w-full space-y-6 relative z-10 scroll-smooth custom-scrollbar">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col justify-between max-h-[500px]">
-              <div className="flex-1 flex items-center justify-center flex-col text-center px-4">
-                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-black/10">
-                  <Bot className="w-8 h-8 text-indigo-400" />
+            <div className="h-full flex flex-col justify-between max-h-[600px]">
+              <div className="flex-1 flex items-center justify-center flex-col text-center px-4 pt-12">
+                <div className="w-20 h-20 bg-gradient-to-br from-white/5 to-white/[0.01] border border-white/10 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full" />
+                  <Bot className="w-10 h-10 text-indigo-300 relative z-10" />
                 </div>
-                <h2 className="font-bold text-2xl bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-                  Understand your PDF documents
+                <h2 className="font-extrabold text-3xl md:text-4xl bg-gradient-to-br from-white via-slate-200 to-slate-500 bg-clip-text text-transparent tracking-tight">
+                  Understand your PDFs.
                 </h2>
-                <p className="text-white/40 text-sm max-w-md mx-auto mt-2.5 leading-relaxed">
-                  Upload one or multiple files in the left workspace library panel. Ask questions, extract key concepts, or summarize long content instantly.
+                <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto mt-4 leading-relaxed font-medium">
+                  Upload documents to your secure workspace. Extract insights, summarize concepts, and get instant answers powered by advanced AI.
                 </p>
               </div>
 
               {/* Mobile Active Files Notice */}
               {files.length > 0 && (
-                <div className="md:hidden p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-4 text-xs text-center flex items-center justify-center gap-2">
+                <div className="md:hidden p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-6 text-xs text-center flex items-center justify-center gap-2">
                   <FileText className="w-4 h-4 text-indigo-400" />
-                  Loaded: <span className="font-bold">{files.length} document(s)</span>
+                  <span className="text-slate-300 font-medium">Loaded: <span className="font-bold text-white">{files.length} document(s)</span></span>
                 </div>
               )}
 
-              <ExamplePrompts onPromptSelect={setInput} />
+              <div className="pb-8">
+                <ExamplePrompts onPromptSelect={setInput} />
+              </div>
             </div>
           ) : (
-            <div className="space-y-5 pb-32">
+            <div className="space-y-6 pb-40">
               {messages.map((message, idx) => (
                 <ChatMessage key={idx} message={message} />
               ))}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="h-4" />
             </div>
           )}
         </section>
 
         {/* Input Form container */}
-        <footer className="p-4 bg-gradient-to-t from-background via-background/90 to-transparent fixed bottom-0 left-0 md:left-80 right-0">
-          <div className="max-w-4xl mx-auto">
-            <form onSubmit={handleSubmit} className="relative shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all duration-300 focus-within:border-indigo-500/40">
-              <div className="flex items-center gap-2 h-14 px-4">
+        <footer className="p-4 md:p-6 bg-gradient-to-t from-[#030305] via-[#030305]/95 to-transparent fixed bottom-0 left-0 md:left-80 right-0 z-30 pointer-events-none">
+          <div className="max-w-4xl mx-auto pointer-events-auto">
+            <form onSubmit={handleSubmit} className="relative shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-[#12121a]/80 backdrop-blur-2xl transition-all duration-300 focus-within:border-indigo-500/50 focus-within:bg-[#12121a]/95 focus-within:shadow-[0_0_30px_rgba(99,102,241,0.15)] group">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-focus-within:animate-[shimmer_2s_infinite]" />
+              <div className="flex items-center gap-3 h-16 px-4 relative z-10">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
                     isUploading 
-                      ? 'Uploading to catalog...' 
+                      ? 'Processing documents...' 
                       : files.length > 0 
-                        ? 'Query active documents...' 
-                        : 'Send a general message or load files...'
+                        ? 'Ask anything about your documents...' 
+                        : 'Send a message or load files to begin...'
                   }
-                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full bg-transparent text-sm placeholder:text-white/35 text-white/90"
+                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full bg-transparent text-[15px] placeholder:text-slate-500 text-slate-200"
                   disabled={isUploading || isLoading || !threadId}
                 />
                 
                 <Button
                   type="submit"
                   size="icon"
-                  className="rounded-xl h-10 w-10 bg-indigo-600 hover:bg-indigo-500 hover:scale-[1.02] shadow-lg shadow-indigo-600/20 transition-all duration-300 disabled:bg-white/5 disabled:text-white/20"
+                  className="rounded-xl h-10 w-10 shrink-0 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 hover:scale-105 shadow-lg shadow-indigo-500/25 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none"
                   disabled={!input.trim() || isUploading || isLoading || !threadId}
                 >
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
                   ) : (
-                    <ArrowUp className="h-4.5 w-4.5 text-white" />
+                    <ArrowUp className="h-5 w-5 text-white" />
                   )}
                 </Button>
               </div>
             </form>
-            <div className="text-[10px] text-white/25 text-center mt-2.5 font-medium">
-              Multi-user session isolated. Ingestion and chat actions apply only to your session.
+            <div className="text-[10px] text-slate-500 text-center mt-3 font-medium tracking-wide">
+              Secure Session • Powered by Llama 3 • Responses may occasionally be inaccurate.
             </div>
           </div>
         </footer>
