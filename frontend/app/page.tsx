@@ -84,6 +84,8 @@ export default function Home() {
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+    // 90-second safety timeout — covers Render free-tier cold-starts (~50–90s)
+    const timeoutId = setTimeout(() => abortController.abort(), 90_000);
 
     lastRetrievedDocsRef.current = []; // Clear the last retrieved documents
 
@@ -176,27 +178,58 @@ export default function Home() {
               // Clear the last retrieved documents if it's a direct answer
               lastRetrievedDocsRef.current = [];
             }
+          } else if (event === 'error') {
+            // Backend returned an error event — surface it to the user
+            const errMsg =
+              typeof data?.message === 'string'
+                ? data.message
+                : typeof data?.error === 'string'
+                ? data.error
+                : 'The AI backend returned an error.';
+            setMessages((prev) => {
+              const newArr = [...prev];
+              if (
+                newArr.length > 0 &&
+                newArr[newArr.length - 1].role === 'assistant'
+              ) {
+                newArr[newArr.length - 1].content =
+                  `⚠️ Backend error: ${errMsg.slice(0, 300)}`;
+              }
+              return newArr;
+            });
+            toast({
+              title: 'AI Backend Error',
+              description: errMsg.slice(0, 200),
+              variant: 'destructive',
+            });
           } else {
             console.log('Unknown SSE event:', event, data);
           }
         }
       }
     } catch (error) {
+      // Distinguish abort (timeout) from real errors
+      const isTimeout =
+        error instanceof DOMException && error.name === 'AbortError';
+      const description = isTimeout
+        ? 'The request timed out. The AI backend may be cold-starting — please try again in ~30 seconds.'
+        : 'Failed to send message. Please try again.\n' +
+          (error instanceof Error ? error.message : 'Unknown error');
       console.error('Error sending message:', error);
       toast({
-        title: 'Error',
-        description:
-          'Failed to send message. Please try again.\n' +
-          (error instanceof Error ? error.message : 'Unknown error'),
+        title: isTimeout ? 'Request timed out' : 'Error',
+        description,
         variant: 'destructive',
       });
       setMessages((prev) => {
         const newArr = [...prev];
-        newArr[newArr.length - 1].content =
-          'Sorry, there was an error processing your message.';
+        newArr[newArr.length - 1].content = isTimeout
+          ? '⏱ Request timed out. The server may be waking up — please try again.'
+          : 'Sorry, there was an error processing your message.';
         return newArr;
       });
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
       abortControllerRef.current = null;
     }
