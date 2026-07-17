@@ -53,6 +53,13 @@ export function ensureAgentConfiguration(
       .replace(/gemini-2\.0-flash(?!-lite)(-\d+)?(-preview(-[\w-]+)?)?/, 'gemini-2.0-flash-lite');
   }
 
+  // Force Groq model if GROQ_API_KEY is set and the model resolves to Google.
+  // This prevents Render dashboard env overrides from keeping it stuck on Gemini.
+  if (hasGroqKey && (queryModel.includes('gemini') || queryModel.startsWith('google-genai') || queryModel.startsWith('google-vertexai'))) {
+    console.log(`[retrieval_graph] GROQ_API_KEY is set. Overriding Google model '${queryModel}' to 'groq/llama-3.3-70b-versatile'.`);
+    queryModel = 'groq/llama-3.3-70b-versatile';
+  }
+
   return {
     ...baseConfig,
     queryModel,
