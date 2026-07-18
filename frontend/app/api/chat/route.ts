@@ -99,17 +99,32 @@ export async function POST(req: Request) {
         },
       });
     } catch (error) {
-      console.error('Stream initialization error:', error);
-      return new NextResponse(
-        JSON.stringify({
-          error: 'Failed to connect to the AI backend.',
-          details: error instanceof Error ? error.message : String(error),
-        }),
-        {
-          status: 502,
-          headers: { 'Content-Type': 'application/json' },
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('Stream initialization error:', errorMsg);
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                event: 'error',
+                data: {
+                  message: `Backend unreachable: ${errorMsg}`,
+                },
+              })}\n\n`,
+            ),
+          );
+          controller.close();
         },
-      );
+      });
+      return new Response(errorStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
+        },
+      });
     }
   } catch (error) {
     console.error('Route error:', error);

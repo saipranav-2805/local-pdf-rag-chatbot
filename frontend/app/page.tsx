@@ -212,6 +212,16 @@ export default function Home() {
           }
         }
       }
+
+      // If the stream ended but the assistant never sent content, remove the
+      // empty bubble to avoid a permanent "..." loading state.
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'assistant' && last.content === '') {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } catch (error) {
       const isTimeout = error instanceof DOMException && error.name === 'AbortError';
       const description = isTimeout
